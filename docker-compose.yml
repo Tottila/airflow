@@ -1,0 +1,37 @@
+version: '3'
+services:
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=airflow
+    ports:
+      - 5432:5432
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  airflow:
+    build: .
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__FERNET_KEY=HXJmviZ45J6R0bM1DFFij0JJ1ca_JMDWo9Z-Q-wqsFk=
+      - AIRFLOW__WEBSERVER__SECRET_KEY=b27dfe9846d048294adc0df96ad43239fa325db739a0a69a60672e3e6272
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/airflow
+    ports:
+      - 8001:8080
+    volumes:
+      - ./airflow/dags:/usr/local/airflow/dags
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8081:8080"
+    restart: always
